@@ -17,9 +17,10 @@
 #include <limits.h>
 
 /* Although the Linux source code makes a difference between
-   generic endianness and the bitfields' endianness, there is no
-   architecture as of Linux-2.6.24-rc4 where the bitfields' endianness
-   does not match the generic endianness. */
+ * generic endianness and the bitfields' endianness, there is no
+ * architecture as of Linux-2.6.24-rc4 where the bitfields' endianness
+ * does not match the generic endianness.
+ */
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define __LITTLE_ENDIAN_BITFIELD
@@ -148,7 +149,7 @@ enum drbd_ret_code {
 	ERR_CSUMS_ALG_ND	= 145, /* DRBD 8.2 only */
 	ERR_VERIFY_ALG		= 146, /* DRBD 8.2 only */
 	ERR_VERIFY_ALG_ND	= 147, /* DRBD 8.2 only */
-	ERR_CSUMS_RESYNC_RUNNING= 148, /* DRBD 8.2 only */
+	ERR_CSUMS_RESYNC_RUNNING = 148, /* DRBD 8.2 only */
 	ERR_VERIFY_RUNNING	= 149, /* DRBD 8.2 only */
 	ERR_DATA_NOT_CURRENT	= 150,
 	ERR_CONNECTED		= 151, /* DRBD 8.3 only */
@@ -174,7 +175,7 @@ enum drbd_ret_code {
 	ERR_INVALID_PEER_NODE_ID = 171,
 	ERR_CREATE_TRANSPORT    = 172,
 	ERR_LOCAL_AND_PEER_ADDR = 173,
-	ERR_ALREADY_EXISTS 	= 174,
+	ERR_ALREADY_EXISTS	= 174,
 	ERR_APV_TOO_LOW         = 175,
 	ERR_PATH_COLLISION      = 176,
 
@@ -206,7 +207,8 @@ enum drbd_conn_state {
 	/* These temporary states are used on the way
 	 * from C_CONNECTED to C_UNCONNECTED.
 	 * The 'disconnect reason' states
-	 * I do not allow to change between them. */
+	 * I do not allow to change between them.
+	 */
 	C_TIMEOUT,
 	C_BROKEN_PIPE,
 	C_NETWORK_FAILURE,
@@ -232,7 +234,8 @@ enum drbd_repl_state {
 	L_WF_SYNC_UUID,
 
 	/* All SyncStates are tested with this comparison
-	 * xx >= L_SYNC_SOURCE && xx <= L_PAUSED_SYNC_T */
+	 * xx >= L_SYNC_SOURCE && xx <= L_PAUSED_SYNC_T
+	 */
 	L_SYNC_SOURCE,
 	L_SYNC_TARGET,
 	L_VERIFY_S,
@@ -271,33 +274,33 @@ union drbd_state {
  */
 	struct {
 #if defined(__LITTLE_ENDIAN_BITFIELD)
-		unsigned role:2 ;   /* 3/4	 primary/secondary/unknown */
-		unsigned peer:2 ;   /* 3/4	 primary/secondary/unknown */
-		unsigned conn:5 ;   /* 17/32	 cstates */
-		unsigned disk:4 ;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
-		unsigned pdsk:4 ;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
-		unsigned susp:1 ;   /* 2/2	 IO suspended no/yes (by user) */
-		unsigned aftr_isp:1 ; /* isp .. imposed sync pause */
-		unsigned peer_isp:1 ;
-		unsigned user_isp:1 ;
-		unsigned susp_nod:1 ; /* IO suspended because no data */
-		unsigned susp_fen:1 ; /* IO suspended because fence peer handler runs*/
+		unsigned role:2;   /* 3/4	 primary/secondary/unknown */
+		unsigned peer:2;   /* 3/4	 primary/secondary/unknown */
+		unsigned conn:5;   /* 17/32	 cstates */
+		unsigned disk:4;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
+		unsigned pdsk:4;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
+		unsigned susp:1;   /* 2/2	 IO suspended no/yes (by user) */
+		unsigned aftr_isp:1; /* isp .. imposed sync pause */
+		unsigned peer_isp:1;
+		unsigned user_isp:1;
+		unsigned susp_nod:1; /* IO suspended because no data */
+		unsigned susp_fen:1; /* IO suspended because fence peer handler runs*/
 		unsigned quorum:1;
 		unsigned _pad:8;   /* 0	 unused */
 #elif defined(__BIG_ENDIAN_BITFIELD)
 		unsigned _pad:8;
 		unsigned quorum:1;
-		unsigned susp_fen:1 ;
-		unsigned susp_nod:1 ;
-		unsigned user_isp:1 ;
-		unsigned peer_isp:1 ;
-		unsigned aftr_isp:1 ; /* isp .. imposed sync pause */
-		unsigned susp:1 ;   /* 2/2	 IO suspended  no/yes */
-		unsigned pdsk:4 ;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
-		unsigned disk:4 ;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
-		unsigned conn:5 ;   /* 17/32	 cstates */
-		unsigned peer:2 ;   /* 3/4	 primary/secondary/unknown */
-		unsigned role:2 ;   /* 3/4	 primary/secondary/unknown */
+		unsigned susp_fen:1;
+		unsigned susp_nod:1;
+		unsigned user_isp:1;
+		unsigned peer_isp:1;
+		unsigned aftr_isp:1; /* isp .. imposed sync pause */
+		unsigned susp:1;   /* 2/2	 IO suspended  no/yes */
+		unsigned pdsk:4;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
+		unsigned disk:4;   /* 8/16	 from D_DISKLESS to D_UP_TO_DATE */
+		unsigned conn:5;   /* 17/32	 cstates */
+		unsigned peer:2;   /* 3/4	 primary/secondary/unknown */
+		unsigned role:2;   /* 3/4	 primary/secondary/unknown */
 #else
 # error "this endianness is not supported"
 #endif
@@ -324,7 +327,7 @@ enum drbd_state_rv {
 	SS_DEVICE_IN_USE = -12,
 	SS_NO_NET_CONFIG = -13,
 	SS_NO_VERIFY_ALG = -14,       /* drbd-8.2 only */
-	SS_NEED_CONNECTION = -15,
+	SS_NEED_CONNECTION = -15, /* Need connection this state change affects to be connected */
 	SS_LOWER_THAN_OUTDATED = -16,
 	SS_NOT_SUPPORTED = -17,
 	SS_IN_TRANSIENT_STATE = -18,  /* Retry after the next state change */
@@ -343,6 +346,10 @@ enum drbd_state_rv {
 
 #define SHARED_SECRET_MAX 64
 
+/* Meta data feature flags */
+#define DRBD_MDFF_DIVERGENCE_BITMAP (1ULL << 0)
+#define DRBD_MDFF_BITMAP_AUTHORITATIVE (1ULL << 1) /* MDF_PEER_BITMAP_AUTHORITATIVE is maintained */
+
 enum mdf_flag {
 	MDF_CONSISTENT =	1 << 0,
 	MDF_PRIMARY_IND =	1 << 1,
@@ -354,14 +361,32 @@ enum mdf_flag {
 	MDF_HAVE_QUORUM =       1 << 10,
 };
 
+/* Bit numbers, for the atomic bit operations on struct drbd_peer_md flags.
+ * Maximum value 31 because the flags are persisted as be32.
+ */
+enum mdf_peer_flag_bit {
+	__MDF_PEER_CONNECTED =	0,
+	__MDF_PEER_OUTDATED =	1,
+	__MDF_PEER_FENCING =	2,
+	__MDF_PEER_FULL_SYNC =	3,
+	__MDF_PEER_DEVICE_SEEN = 4,
+	__MDF_PEER_DIVERGENCE_BITMAP = 5, /* bitmap fully records divergence; safe to copy from */
+	__MDF_PEER_BITMAP_AUTHORITATIVE = 6, /* out-of-sync bits were set for blocks the peer lacks, not by a resync or an invalidate */
+	__MDF_NODE_EXISTS =	16,
+	__MDF_HAVE_BITMAP =	31,  /* For in core use; no meaning when persisted */
+};
+
+/* Masks, for the on-disk and netlink representations. */
 enum mdf_peer_flag {
-	MDF_PEER_CONNECTED =	1 << 0,
-	MDF_PEER_OUTDATED =	1 << 1,
-	MDF_PEER_FENCING =	1 << 2,
-	MDF_PEER_FULL_SYNC =	1 << 3,
-	MDF_PEER_DEVICE_SEEN =	1 << 4,
-	MDF_NODE_EXISTS =       1 << 16,
-	MDF_HAVE_BITMAP =       1 << 31,  /* For in core use; no meaning when persistet */
+	MDF_PEER_CONNECTED =	1U << __MDF_PEER_CONNECTED,
+	MDF_PEER_OUTDATED =	1U << __MDF_PEER_OUTDATED,
+	MDF_PEER_FENCING =	1U << __MDF_PEER_FENCING,
+	MDF_PEER_FULL_SYNC =	1U << __MDF_PEER_FULL_SYNC,
+	MDF_PEER_DEVICE_SEEN =	1U << __MDF_PEER_DEVICE_SEEN,
+	MDF_PEER_DIVERGENCE_BITMAP = 1U << __MDF_PEER_DIVERGENCE_BITMAP,
+	MDF_PEER_BITMAP_AUTHORITATIVE = 1U << __MDF_PEER_BITMAP_AUTHORITATIVE,
+	MDF_NODE_EXISTS =       1U << __MDF_NODE_EXISTS,
+	MDF_HAVE_BITMAP =       1U << __MDF_HAVE_BITMAP,
 };
 
 #define DRBD_PEERS_MAX 32
@@ -379,6 +404,7 @@ enum drbd_uuid_index {
 
 #define HISTORY_UUIDS_V08 (UI_HISTORY_END - UI_HISTORY_START + 1)
 #define HISTORY_UUIDS DRBD_PEERS_MAX
+#define HISTORY_UUIDS_SIZE (HISTORY_UUIDS * sizeof(__u64))
 
 enum drbd_timeout_flag {
 	UT_DEFAULT      = 0,
@@ -444,5 +470,38 @@ enum drbd_peer_state {
 #define QOU_OFF 0
 #define QOU_MAJORITY 1024
 #define QOU_ALL 1025
+
+/**
+ * struct drbd_genlmsghdr - DRBD specific header used in NETLINK_GENERIC requests
+ * @minor:
+ *     For admin requests (user -> kernel): which minor device to operate on.
+ *     For (unicast) replies or informational (broadcast) messages
+ *     (kernel -> user): which minor device the information is about.
+ *     If we do not operate on minors, but on connections or resources,
+ *     the minor value shall be (~0), and the attribute DRBD_NLA_CFG_CONTEXT
+ *     is used instead.
+ * @flags: possible operation modifiers (relevant only for user->kernel):
+ *     DRBD_GENL_F_SET_DEFAULTS
+ * @ret_code: kernel->userland unicast cfg reply return code (union with flags);
+ */
+struct drbd_genlmsghdr {
+	__u32 minor;
+	union {
+	__u32 flags;
+	__s32 ret_code;
+	};
+};
+
+/* To be used in drbd_genlmsghdr.flags */
+enum {
+	DRBD_GENL_F_SET_DEFAULTS = 1,
+};
+
+/*
+ * DRBD_GENLA_F_MANDATORY: netlink ignores attributes it does not know
+ * about by default. This flag in nlattr->nla_type indicates that this
+ * attribute must not be ignored. Checked and stripped in pre_doit.
+ */
+#define DRBD_GENLA_F_MANDATORY (1 << 14)
 
 #endif

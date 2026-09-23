@@ -11,12 +11,11 @@
 #else
 #include <stdint.h>
 #define u64 uint64_t
-#endif
-#include <linux/drbd.h>
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
+#endif
+#include <linux/drbd.h>
 
 enum drbd_packet {
 	/* receiver (data socket) */
@@ -69,30 +68,39 @@ enum drbd_packet {
 	P_RS_CANCEL           = 0x29, /* meta: Used to cancel RS_DATA_REQUEST packet by SyncSource */
 	P_CONN_ST_CHG_REQ     = 0x2a, /* data sock: state change request */
 	P_CONN_ST_CHG_REPLY   = 0x2b, /* meta sock: state change reply */
-	P_RETRY_WRITE	      = 0x2c, /* Protocol C: retry conflicting write request */
+	P_RETRY_WRITE	      = 0x2c, /* meta sock: Protocol C: peer did not process this write, retry it.
+				       * Was the 8.4 two-primaries conflict retry; reused, gated by
+				       * DRBD_FF_WRITE_POSTPONE, as the answer to a write a sync
+				       * target can not secure toward its sync source. */
 	P_PROTOCOL_UPDATE     = 0x2d, /* data sock: is used in established connections */
 	P_TWOPC_PREPARE       = 0x2e, /* data sock: prepare state change */
 	P_TWOPC_ABORT         = 0x2f, /* data sock: abort state change */
 
 	P_DAGTAG	      = 0x30, /* data sock: set the current dagtag */
 
-	/* REQ_DISCARD. We used "discard" in different contexts before,
-	 * which is why I chose TRIM here, to disambiguate. */
+	/*
+	 * REQ_DISCARD. We used "discard" in different contexts before,
+	 * which is why I chose TRIM here, to disambiguate.
+	 */
 	P_TRIM                = 0x31,
 
 	/* Only use these two if both support FF_THIN_RESYNC */
 	P_RS_THIN_REQ         = 0x32, /* Request a block for resync or reply P_RS_DEALLOCATED */
 	P_RS_DEALLOCATED      = 0x33, /* Protocol < 122 version of P_RS_DEALLOCATED_ID */
 
-	/* REQ_WRITE_SAME.
+	/*
+	 * REQ_WRITE_SAME.
 	 * On a receiving side without REQ_WRITE_SAME,
-	 * we may fall back to an opencoded loop instead. */
+	 * we may fall back to an opencoded loop instead.
+	 */
 	P_WSAME               = 0x34,
 	P_TWOPC_PREP_RSZ      = 0x35, /* PREPARE a 2PC resize operation*/
 	P_ZEROES              = 0x36, /* data sock: zero-out, WRITE_ZEROES */
 
-	/* place new packets for both 8.4 and 9 here,
-	 * place new packets for 9-only in the next gap. */
+	/*
+	 * place new packets for both 8.4 and 9 here,
+	 * place new packets for 9-only in the next gap.
+	 */
 
 	P_PEER_ACK            = 0x40, /* meta sock: tell which nodes have acked a request */
 	P_PEERS_IN_SYNC       = 0x41, /* data sock: Mark area as in sync */
@@ -107,9 +115,11 @@ enum drbd_packet {
 	P_TWOPC_RETRY         = 0x48, /* meta sock: retry two-phase commit */
 
 	P_CONFIRM_STABLE      = 0x49, /* meta sock: similar to an unsolicited partial barrier ack */
-	P_RS_CANCEL_AHEAD     = 0x4a, /* protocol version 115,
-		 * meta: cancel RS_DATA_REQUEST packet if already Ahead again,
-		 *       tell peer to stop sending resync requests... */
+	/* protocol version 115,
+	 * meta: cancel RS_DATA_REQUEST packet if already Ahead again,
+	 *       tell peer to stop sending resync requests...
+	 */
+	P_RS_CANCEL_AHEAD     = 0x4a,
 	P_DISCONNECT          = 0x4b, /* data sock: Disconnect and stop connection attempts */
 
 	P_RS_DAGTAG_REQ       = 0x4c, /* data sock: Request a block for resync, with dagtag dependency */
@@ -128,6 +138,10 @@ enum drbd_packet {
 	P_FLUSH_REQUESTS_ACK  = 0x57, /* data sock: Response to initiator of P_FLUSH_REQUESTS */
 	P_ENABLE_REPLICATION_NEXT = 0x58, /* data sock: whether to start replication on next resync start */
 	P_ENABLE_REPLICATION  = 0x59, /* data sock: enable or disable replication during resync */
+
+	P_RS_DAGTAG_WAIT_REQ  = 0x5a, /* data sock: Wait for the dagtag dependency only, answer without data */
+	P_RS_DAGTAG_REACHED   = 0x5b, /* meta sock: The dagtag dependency of this request is reached. */
+	P_RS_DAGTAG_UNREACHABLE = 0x5c, /* meta sock: Can not reach the dagtag this request depends on. */
 
 	P_MAY_IGNORE	      = 0x100, /* Flag to test if (cmd > P_MAY_IGNORE) ... */
 
@@ -228,6 +242,8 @@ struct p_wsame {
  *   P_RS_CANCEL
  *   P_RS_DEALLOCATED_ID
  *   P_RS_CANCEL_AHEAD
+ *   P_RS_DAGTAG_REACHED
+ *   P_RS_DAGTAG_UNREACHABLE
  */
 struct p_block_ack {
 	uint64_t sector;
@@ -287,6 +303,7 @@ struct p_block_req {
  *   P_RS_THIN_DAGTAG_REQ
  *   P_OV_DAGTAG_REQ
  *   P_OV_DAGTAG_REPLY
+ *   P_RS_DAGTAG_WAIT_REQ
  */
 struct p_rs_req {
 	struct p_block_req_common req_common;
@@ -297,8 +314,10 @@ struct p_rs_req {
 /* supports TRIM/DISCARD on the "wire" protocol */
 #define DRBD_FF_TRIM 1
 
-/* Detect all-zeros during resync, and rather TRIM/UNMAP/DISCARD those blocks
- * instead of fully allocate a supposedly thin volume on initial resync */
+/*
+ * Detect all-zeros during resync, and rather TRIM/UNMAP/DISCARD those blocks
+ * instead of fully allocate a supposedly thin volume on initial resync
+ */
 #define DRBD_FF_THIN_RESYNC 2
 
 /* supports REQ_WRITE_SAME on the "wire" protocol.
@@ -389,6 +408,21 @@ struct p_rs_req {
  */
 #define DRBD_FF_RECONCILE_RECONNECT 512
 
+/* A sync target that received a write in a range the sync source is still to
+ * resync does not acknowledge it before the source holds that write too: it
+ * asks with P_RS_DAGTAG_WAIT_REQ, naming the write's position in the writer's
+ * stream, and the source answers P_RS_DAGTAG_REACHED once its copy of that
+ * stream has reached the position, or P_RS_DAGTAG_UNREACHABLE when it has
+ * lost the writer. In the unreachable case the target answers the writer
+ * P_RETRY_WRITE: the write counts as not processed, and the writer retries
+ * it once the cluster can order it again.
+ *
+ * Advertised by every node that answers dagtag wait requests, serves a resync
+ * to a target that secures its writes, sends the postpone answer, and retries
+ * a postponed write.
+ */
+#define DRBD_FF_WRITE_POSTPONE 1024
+
 struct p_connection_features {
 	uint32_t protocol_min;
 	uint32_t feature_flags;
@@ -430,7 +464,7 @@ struct p_rs_param {
 
 struct p_rs_param_89 {
 	uint32_t resync_rate;
-        /* protocol version 89: */
+	/* protocol version 89: */
 	char verify_alg[SHARED_SECRET_MAX];
 	char csums_alg[SHARED_SECRET_MAX];
 } __packed;
@@ -458,7 +492,7 @@ struct p_protocol {
 	uint32_t conn_flags;
 	uint32_t two_primaries;
 
-              /* Since protocol version 87 and higher. */
+	/* Since protocol version 87 and higher. */
 	char integrity_alg[];
 
 } __packed;
@@ -483,6 +517,7 @@ struct p_protocol {
 #define UUID_FLAG_PRIMARY_LOST_QUORUM ((u64)1 << 10)
 #define UUID_FLAG_SYNC_TARGET         ((u64)1 << 11) /* currently L_SYNC_TARGET to some peer */
 #define UUID_FLAG_HAS_UNALLOC         ((u64)1 << 12) /* highest byte contains index of not allocated bitmap uuid */
+#define UUID_FLAG_BITMAP_AUTHORITATIVE ((u64)1 << 13) /* my out-of-sync bits toward you were set for blocks you lack, not by a resync or an invalidate; protocol 125 */
 
 #define UUID_FLAG_UNALLOC_SHIFT       56
 #define UUID_FLAG_UNALLOC_MASK        ((u64)0xff << UUID_FLAG_UNALLOC_SHIFT)
@@ -499,13 +534,17 @@ struct p_uuids110 {
 	uint64_t current_uuid;
 	uint64_t dirty_bits;
 	uint64_t uuid_flags;
-	uint64_t node_mask; /* weak_nodes when UUID_FLAG_NEW_DATAGEN is set ;
-			       authoritative nodes when UUID_FLAG_STABLE not set */
+	uint64_t node_mask;
+	/* weak_nodes when UUID_FLAG_NEW_DATAGEN is set;
+	 * authoritative nodes when UUID_FLAG_STABLE not set
+	 */
 
 	uint64_t bitmap_uuids_mask; /* non zero bitmap UUIDS for these nodes */
-	uint64_t other_uuids[]; /* the first hweight(bitmap_uuids_mask) slots carry bitmap uuids.
-				    The node with the lowest node_id first.
-				    The remaining slots carry history uuids */
+	uint64_t other_uuids[];
+	/* the first hweight(bitmap_uuids_mask) slots carry bitmap uuids.
+	 * The node with the lowest node_id first.
+	 * The remaining slots carry history uuids
+	 */
 } __packed;
 
 struct p_current_uuid {
@@ -517,14 +556,18 @@ struct p_uuid {
 	uint64_t uuid;
 } __packed;
 
-/* optional queue_limits if (agreed_features & DRBD_FF_WSAME)
- * see also struct queue_limits, as of late 2015 */
+/*
+ * optional queue_limits if (agreed_features & DRBD_FF_WSAME)
+ * see also struct queue_limits, as of late 2015
+ */
 struct o_qlim {
 	/* we don't need it yet, but we may as well communicate it now */
 	uint32_t physical_block_size;
 
-	/* so the original in struct queue_limits is unsigned short,
-	 * but I'd have to put in padding anyways. */
+	/*
+	 * so the original in struct queue_limits is unsigned short,
+	 * but I'd have to put in padding anyways.
+	 */
 	uint32_t logical_block_size;
 
 	/* One incoming bio becomes one DRBD request,
@@ -537,10 +580,13 @@ struct o_qlim {
 	uint32_t io_min;
 	uint32_t io_opt;
 
-	/* We may need to communicate integrity stuff at some point,
-	 * but let's not get ahead of ourselves. */
+	/*
+	 * We may need to communicate integrity stuff at some point,
+	 * but let's not get ahead of ourselves.
+	 */
 
-	/* Backend discard capabilities.
+	/*
+	 * Backend discard capabilities.
 	 * Receiving side uses "blkdev_issue_discard()", no need to communicate
 	 * more specifics.  If the backend cannot do discards, the DRBD peer
 	 * may fall back to blkdev_issue_zeroout().
@@ -660,17 +706,22 @@ struct p_block_desc {
 	uint32_t pad;	/* to multiple of 8 Byte */
 } __packed;
 
-/* Valid values for the encoding field.
- * Bump proto version when changing this. */
+/*
+ * Valid values for the encoding field.
+ * Bump proto version when changing this.
+ */
 enum drbd_bitmap_code {
-	/* RLE_VLI_Bytes = 0,
+	/*
+	 * RLE_VLI_Bytes = 0,
 	 * and other bit variants had been defined during
-	 * algorithm evaluation. */
+	 * algorithm evaluation.
+	 */
 	RLE_VLI_Bits = 2,
 };
 
 struct p_compressed_bm {
-	/* (encoding & 0x0f): actual encoding, see enum drbd_bitmap_code
+	/*
+	 * (encoding & 0x0f): actual encoding, see enum drbd_bitmap_code
 	 * (encoding & 0x80): polarity (set/unset) of first runlength
 	 * ((encoding >> 4) & 0x07): pad_bits, number of trailing zero bits
 	 * used to pad up to head.length bytes
@@ -721,9 +772,9 @@ struct p_flush_ack {
 } __packed;
 
 struct p_enable_replication {
-       uint8_t enable;
-       uint8_t _pad1;
-       uint16_t _pad2;
+	uint8_t enable;
+	uint8_t _pad1;
+	uint16_t _pad2;
 } __packed;
 
 /*
