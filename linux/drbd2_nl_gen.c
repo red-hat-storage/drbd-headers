@@ -19,6 +19,10 @@ const struct nla_policy drbd2_address_nl_policy[DRBD2_A_ADDRESS_IPV6 + 1] = {
 	[DRBD2_A_ADDRESS_IPV6] = NLA_POLICY_EXACT_LEN(16),
 };
 
+const struct nla_policy drbd2_cbt_start_parms_nl_policy[DRBD2_A_CBT_START_PARMS_BOOKMARK_ID + 1] = {
+	[DRBD2_A_CBT_START_PARMS_BOOKMARK_ID] = { .type = NLA_U64, },
+};
+
 const struct nla_policy drbd2_connect_parms_nl_policy[DRBD2_A_CONNECT_PARMS_DISCARD_MY_DATA + 1] = {
 	[DRBD2_A_CONNECT_PARMS_TENTATIVE] = { .type = NLA_FLAG, },
 	[DRBD2_A_CONNECT_PARMS_DISCARD_MY_DATA] = { .type = NLA_FLAG, },
@@ -180,8 +184,9 @@ const struct nla_policy drbd2_start_ov_parms_nl_policy[DRBD2_A_START_OV_PARMS_ST
 	[DRBD2_A_START_OV_PARMS_STOP_SECTOR] = { .type = NLA_U64, },
 };
 
-const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1] = {
+const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1] = {
 	[DRBD2_A_SUSPEND_IO_PARMS_BDEV_FREEZE] = { .type = NLA_U8, },
+	[DRBD2_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS] = { .type = NLA_U8, },
 };
 
 /* DRBD2_CMD_RESOURCE_NEW - do */
@@ -391,6 +396,27 @@ static const struct nla_policy drbd2_peer_device_get_nl_policy[DRBD2_A_CONTEXT +
 
 /* DRBD2_CMD_PATH_GET - dump */
 static const struct nla_policy drbd2_path_get_nl_policy[DRBD2_A_CONTEXT + 1] = {
+	[DRBD2_A_CONTEXT] = NLA_POLICY_NESTED(drbd2_context_nl_policy),
+};
+
+/* DRBD2_CMD_DEVICE_CBT_FLUSH - do */
+static const struct nla_policy drbd2_device_cbt_flush_nl_policy[DRBD2_A_CONTEXT + 1] = {
+	[DRBD2_A_CONTEXT] = NLA_POLICY_NESTED(drbd2_context_nl_policy),
+};
+
+/* DRBD2_CMD_DEVICE_CBT_START - do */
+static const struct nla_policy drbd2_device_cbt_start_nl_policy[DRBD2_A_CBT_START_PARMS + 1] = {
+	[DRBD2_A_CONTEXT] = NLA_POLICY_NESTED(drbd2_context_nl_policy),
+	[DRBD2_A_CBT_START_PARMS] = NLA_POLICY_NESTED(drbd2_cbt_start_parms_nl_policy),
+};
+
+/* DRBD2_CMD_DEVICE_CBT_STOP - do */
+static const struct nla_policy drbd2_device_cbt_stop_nl_policy[DRBD2_A_CONTEXT + 1] = {
+	[DRBD2_A_CONTEXT] = NLA_POLICY_NESTED(drbd2_context_nl_policy),
+};
+
+/* DRBD2_CMD_DEVICE_CBT_STATUS - do */
+static const struct nla_policy drbd2_device_cbt_status_nl_policy[DRBD2_A_CONTEXT + 1] = {
 	[DRBD2_A_CONTEXT] = NLA_POLICY_NESTED(drbd2_context_nl_policy),
 };
 
@@ -728,6 +754,42 @@ static const struct genl_split_ops drbd2_nl_ops[] = {
 		.dumpit	= drbd2_nl_state_get_dumpit,
 		.done	= drbd2_nl_state_get_done,
 		.flags	= GENL_CMD_CAP_DUMP,
+	},
+	{
+		.cmd		= DRBD2_CMD_DEVICE_CBT_FLUSH,
+		.pre_doit	= drbd2_pre_doit,
+		.doit		= drbd2_nl_device_cbt_flush_doit,
+		.post_doit	= drbd2_post_doit,
+		.policy		= drbd2_device_cbt_flush_nl_policy,
+		.maxattr	= DRBD2_A_CONTEXT,
+		.flags		= GENL_ADMIN_PERM | GENL_CMD_CAP_DO,
+	},
+	{
+		.cmd		= DRBD2_CMD_DEVICE_CBT_START,
+		.pre_doit	= drbd2_pre_doit,
+		.doit		= drbd2_nl_device_cbt_start_doit,
+		.post_doit	= drbd2_post_doit,
+		.policy		= drbd2_device_cbt_start_nl_policy,
+		.maxattr	= DRBD2_A_CBT_START_PARMS,
+		.flags		= GENL_ADMIN_PERM | GENL_CMD_CAP_DO,
+	},
+	{
+		.cmd		= DRBD2_CMD_DEVICE_CBT_STOP,
+		.pre_doit	= drbd2_pre_doit,
+		.doit		= drbd2_nl_device_cbt_stop_doit,
+		.post_doit	= drbd2_post_doit,
+		.policy		= drbd2_device_cbt_stop_nl_policy,
+		.maxattr	= DRBD2_A_CONTEXT,
+		.flags		= GENL_ADMIN_PERM | GENL_CMD_CAP_DO,
+	},
+	{
+		.cmd		= DRBD2_CMD_DEVICE_CBT_STATUS,
+		.pre_doit	= drbd2_pre_doit,
+		.doit		= drbd2_nl_device_cbt_status_doit,
+		.post_doit	= drbd2_post_doit,
+		.policy		= drbd2_device_cbt_status_nl_policy,
+		.maxattr	= DRBD2_A_CONTEXT,
+		.flags		= GENL_CMD_CAP_DO,
 	},
 };
 

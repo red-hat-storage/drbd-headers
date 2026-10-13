@@ -14,6 +14,7 @@
 
 /* Common nested types */
 extern const struct nla_policy drbd2_address_nl_policy[DRBD2_A_ADDRESS_IPV6 + 1];
+extern const struct nla_policy drbd2_cbt_start_parms_nl_policy[DRBD2_A_CBT_START_PARMS_BOOKMARK_ID + 1];
 extern const struct nla_policy drbd2_connect_parms_nl_policy[DRBD2_A_CONNECT_PARMS_DISCARD_MY_DATA + 1];
 extern const struct nla_policy drbd2_context_nl_policy[DRBD2_A_CONTEXT_PEER_ADDRESS + 1];
 extern const struct nla_policy drbd2_detach_parms_nl_policy[DRBD2_A_DETACH_PARMS_INTENTIONAL_DISKLESS_DETACH + 1];
@@ -30,7 +31,7 @@ extern const struct nla_policy drbd2_resize_parms_nl_policy[DRBD2_A_RESIZE_PARMS
 extern const struct nla_policy drbd2_resource_opts_nl_policy[DRBD2_A_RESOURCE_OPTS_EXPLICIT_DRBD8_COMPAT + 1];
 extern const struct nla_policy drbd2_set_role_parms_nl_policy[DRBD2_A_SET_ROLE_PARMS_FORCE + 1];
 extern const struct nla_policy drbd2_start_ov_parms_nl_policy[DRBD2_A_START_OV_PARMS_STOP_SECTOR + 1];
-extern const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1];
+extern const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1];
 
 int drbd2_pre_doit(const struct genl_split_ops *ops, struct sk_buff *skb,
 		   struct genl_info *info);
@@ -97,6 +98,11 @@ int drbd2_nl_peer_device_get_dumpit(struct sk_buff *skb,
 				    struct netlink_callback *cb);
 int drbd2_nl_path_get_dumpit(struct sk_buff *skb, struct netlink_callback *cb);
 int drbd2_nl_state_get_dumpit(struct sk_buff *skb, struct netlink_callback *cb);
+int drbd2_nl_device_cbt_flush_doit(struct sk_buff *skb, struct genl_info *info);
+int drbd2_nl_device_cbt_start_doit(struct sk_buff *skb, struct genl_info *info);
+int drbd2_nl_device_cbt_stop_doit(struct sk_buff *skb, struct genl_info *info);
+int drbd2_nl_device_cbt_status_doit(struct sk_buff *skb,
+				    struct genl_info *info);
 
 enum {
 	DRBD2_NLGRP_EVENTS,

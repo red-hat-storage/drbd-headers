@@ -813,6 +813,10 @@ attribute-sets:
     type: u8
     value: 1
     default: DRBD_SUSPEND_IO_BDEV_FREEZE_DEF
+  - name: flush-to-peers
+    type: u8
+    value: 2
+    default: DRBD_SUSPEND_IO_FLUSH_TO_PEERS_DEF
 - name: drbd
   name-prefix: drbd-nla-
   attributes:

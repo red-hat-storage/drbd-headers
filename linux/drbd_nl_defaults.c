@@ -164,4 +164,5 @@ void drbd_set_invalidate_peer_parms_defaults(struct drbd_invalidate_peer_parms *
 void drbd_set_suspend_io_parms_defaults(struct drbd_suspend_io_parms *x)
 {
 	x->bdev_freeze = DRBD_SUSPEND_IO_BDEV_FREEZE_DEF;
+	x->flush_to_peers = DRBD_SUSPEND_IO_FLUSH_TO_PEERS_DEF;
 }

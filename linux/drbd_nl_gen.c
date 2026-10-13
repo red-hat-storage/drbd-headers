@@ -186,8 +186,9 @@ const struct nla_policy drbd_start_ov_parms_nl_policy[DRBD_A_START_OV_PARMS_OV_S
 	[DRBD_A_START_OV_PARMS_OV_STOP_SECTOR] = { .type = NLA_U64, },
 };
 
-const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1] = {
+const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1] = {
 	[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE] = { .type = NLA_U8, },
+	[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS] = { .type = NLA_U8, },
 };
 
 /* DRBD_ADM_NEW_MINOR - do */
@@ -1875,7 +1876,7 @@ static int __suspend_io_parms_from_attrs(struct drbd_suspend_io_parms *s,
 		struct nlattr ***ret_nested_attribute_table,
 		struct genl_info *info)
 {
-	const int maxtype = DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE;
+	const int maxtype = DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS;
 	struct nlattr *tla = info->attrs[DRBD_NLA_SUSPEND_IO_PARAMS];
 	struct nlattr **ntb;
 	struct nlattr *nla;
@@ -1885,7 +1886,7 @@ static int __suspend_io_parms_from_attrs(struct drbd_suspend_io_parms *s,
 		*ret_nested_attribute_table = NULL;
 	if (!tla)
 		return -ENOMSG;
-	ntb = kcalloc(DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1, sizeof(*ntb), GFP_KERNEL);
+	ntb = kcalloc(DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1, sizeof(*ntb), GFP_KERNEL);
 	if (!ntb)
 		return -ENOMEM;
 	err = nla_parse_nested_deprecated(ntb, maxtype, tla, drbd_suspend_io_parms_nl_policy, NULL);
@@ -1895,6 +1896,10 @@ static int __suspend_io_parms_from_attrs(struct drbd_suspend_io_parms *s,
 	nla = ntb[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE];
 	if (nla && s)
 		s->bdev_freeze = nla_get_u8(nla);
+
+	nla = ntb[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS];
+	if (nla && s)
+		s->flush_to_peers = nla_get_u8(nla);
 
 out:
 	if (ret_nested_attribute_table && (!err || err == -ENOMSG))
@@ -2857,6 +2862,8 @@ int suspend_io_parms_to_skb(struct sk_buff *skb, struct drbd_suspend_io_parms *s
 		goto nla_put_failure;
 
 	if (nla_put_u8(skb, DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE, s->bdev_freeze))
+		goto nla_put_failure;
+	if (nla_put_u8(skb, DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS, s->flush_to_peers))
 		goto nla_put_failure;
 
 	nla_nest_end(skb, tla);

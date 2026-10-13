@@ -18,6 +18,19 @@ const struct nla_policy drbd2_address_nl_policy[DRBD2_A_ADDRESS_IPV6 + 1] = {
 	[DRBD2_A_ADDRESS_IPV6] = NLA_POLICY_EXACT_LEN(16),
 };
 
+const struct nla_policy drbd2_cbt_info_nl_policy[DRBD2_A_CBT_INFO_BITMAP_DAGTAG + 1] = {
+	[DRBD2_A_CBT_INFO_ACTIVE] = { .type = NLA_U8, },
+	[DRBD2_A_CBT_INFO_VALID] = { .type = NLA_U8, },
+	[DRBD2_A_CBT_INFO_BOOKMARK_ID] = { .type = NLA_U64, },
+	[DRBD2_A_CBT_INFO_SINCE] = { .type = NLA_U64, },
+	[DRBD2_A_CBT_INFO_BITMAP_UUID] = { .type = NLA_U64, },
+	[DRBD2_A_CBT_INFO_BITMAP_DAGTAG] = { .type = NLA_U64, },
+};
+
+const struct nla_policy drbd2_cbt_start_parms_nl_policy[DRBD2_A_CBT_START_PARMS_BOOKMARK_ID + 1] = {
+	[DRBD2_A_CBT_START_PARMS_BOOKMARK_ID] = { .type = NLA_U64, },
+};
+
 const struct nla_policy drbd2_connect_parms_nl_policy[DRBD2_A_CONNECT_PARMS_DISCARD_MY_DATA + 1] = {
 	[DRBD2_A_CONNECT_PARMS_TENTATIVE] = { .type = NLA_FLAG, },
 	[DRBD2_A_CONNECT_PARMS_DISCARD_MY_DATA] = { .type = NLA_FLAG, },
@@ -310,8 +323,9 @@ const struct nla_policy drbd2_start_ov_parms_nl_policy[DRBD2_A_START_OV_PARMS_ST
 	[DRBD2_A_START_OV_PARMS_STOP_SECTOR] = { .type = NLA_U64, },
 };
 
-const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1] = {
+const struct nla_policy drbd2_suspend_io_parms_nl_policy[DRBD2_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1] = {
 	[DRBD2_A_SUSPEND_IO_PARMS_BDEV_FREEZE] = { .type = NLA_U8, },
+	[DRBD2_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS] = { .type = NLA_U8, },
 };
 
 const struct nla_policy drbd2_tla_nl_policy[DRBD2_TLA_NL_POLICY_LEN] = {
@@ -342,4 +356,6 @@ const struct nla_policy drbd2_tla_nl_policy[DRBD2_TLA_NL_POLICY_LEN] = {
 	[DRBD2_A_CONNECTION] = { .type = NLA_NESTED },
 	[DRBD2_A_PEER_DEVICE] = { .type = NLA_NESTED },
 	[DRBD2_A_PATH] = { .type = NLA_NESTED },
+	[DRBD2_A_CBT_START_PARMS] = { .type = NLA_NESTED },
+	[DRBD2_A_CBT_INFO] = { .type = NLA_NESTED },
 };

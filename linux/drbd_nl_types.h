@@ -362,6 +362,20 @@ struct drbd_invalidate_peer_parms {
 
 struct drbd_suspend_io_parms {
 	unsigned char bdev_freeze;
+	unsigned char flush_to_peers;
+};
+
+struct drbd_cbt_start_parms {
+	__u64 cbt_id;
+};
+
+struct drbd_cbt_info {
+	unsigned char cbt_active;
+	unsigned char cbt_valid;
+	__u64 cbt_bookmark_id;
+	__u64 cbt_since;
+	__u64 cbt_bitmap_uuid;
+	__u64 cbt_bitmap_dagtag;
 };
 
 /*

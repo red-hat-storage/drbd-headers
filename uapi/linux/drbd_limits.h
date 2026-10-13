@@ -351,4 +351,7 @@
 /* Enable bdev_freeze/lockfs by default */
 #define DRBD_SUSPEND_IO_BDEV_FREEZE_DEF 1U
 
+/* Wait for the barrier ack of the last epoch by default */
+#define DRBD_SUSPEND_IO_FLUSH_TO_PEERS_DEF 1U
+
 #endif

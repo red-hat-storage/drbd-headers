@@ -1487,6 +1487,48 @@ attribute-sets:
         name: bdev-freeze
         type: u8
         doc: Whether to freeze the filesystem mounted on the device to bring it into a consistent state before suspending I/O (drbdsetup suspend-io option bdev-freeze).
+      -
+        name: flush-to-peers
+        type: u8
+        doc: Whether to wait until the peers have acknowledged the barrier that closes the last epoch, so that the writes before the suspension are on their stable storage also with protocols A and B (drbdsetup suspend-io option flush-to-peers).
+
+  -
+    name: cbt-start-parms
+    doc: Parameters of the device-cbt-start request.
+    attributes:
+      -
+        name: bookmark-id
+        type: u64
+        doc: Caller-chosen identifier of the backup snapshot the new tracking interval starts at; required.
+
+  -
+    name: cbt-info
+    doc: Changed block tracking state of a device. All but active are absent while tracking is inactive.
+    attributes:
+      -
+        name: active
+        type: u8
+        doc: Whether a bitmap slot tracks the blocks changed since a bookmark.
+      -
+        name: valid
+        type: u8
+        doc: Whether the tracking bitmap holds every change since the bookmark; cleared when changes may have been missed, which requires a full backup.
+      -
+        name: bookmark-id
+        type: u64
+        doc: Identifier given to the device-cbt-start that started the interval.
+      -
+        name: since
+        type: u64
+        doc: Time of that device-cbt-start, in seconds since the epoch.
+      -
+        name: bitmap-uuid
+        type: u64
+        doc: Current UUID of the device at that device-cbt-start.
+      -
+        name: bitmap-dagtag
+        type: u64
+        doc: Data generation tag of the Primary at that device-cbt-start; on a Secondary the last one received from the Primary.
 
   -
     name: resource
@@ -1760,6 +1802,16 @@ attribute-sets:
         type: nest
         nested-attributes: path
         doc: A path (dump reply).
+      -
+        name: cbt-start-parms
+        type: nest
+        nested-attributes: cbt-start-parms
+        doc: Parameters of device-cbt-start.
+      -
+        name: cbt-info
+        type: nest
+        nested-attributes: cbt-info
+        doc: Reply of device-cbt-status.
 
   -
     name: state-change
@@ -2469,6 +2521,78 @@ operations:
           - context
           - helper
       mcgrp: events
+
+    -
+      name: device-cbt-flush
+      doc: Write the bitmaps and the superblock to the meta data device, so that a
+        snapshot of the meta data taken while I/O stays suspended carries every
+        changed block. Requires I/O suspended and drained, no peer write still
+        executing, no resync running, and a disk that is at least Outdated.
+      attribute-set: drbd2
+      flags:
+        - admin-perm
+      do:
+        pre: drbd2-pre-doit
+        post: drbd2-post-doit
+        request:
+          attributes:
+            - context
+        reply:
+          attributes:
+            - state-result
+            - message
+
+    -
+      name: device-cbt-start
+      doc: Clear the changed block tracking bitmap and start a new tracking interval
+        at a bookmark. Allocates the tracking bitmap slot if needed. Requires a
+        device-cbt-flush within the same suspension of I/O and no write to the
+        backing device since.
+      attribute-set: drbd2
+      flags:
+        - admin-perm
+      do:
+        pre: drbd2-pre-doit
+        post: drbd2-post-doit
+        request:
+          attributes:
+            - context
+            - cbt-start-parms
+        reply:
+          attributes:
+            - state-result
+            - message
+
+    -
+      name: device-cbt-stop
+      doc: Stop changed block tracking and free its bitmap slot.
+      attribute-set: drbd2
+      flags:
+        - admin-perm
+      do:
+        pre: drbd2-pre-doit
+        post: drbd2-post-doit
+        request:
+          attributes:
+            - context
+        reply:
+          attributes:
+            - state-result
+            - message
+
+    -
+      name: device-cbt-status
+      doc: Get the changed block tracking state of a device.
+      attribute-set: drbd2
+      do:
+        pre: drbd2-pre-doit
+        post: drbd2-post-doit
+        request:
+          attributes:
+            - context
+        reply:
+          attributes:
+            - cbt-info
 
 mcast-groups:
   list:

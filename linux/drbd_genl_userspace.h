@@ -46,7 +46,7 @@ extern const struct nla_policy drbd_resource_info_nl_policy[DRBD_A_RESOURCE_INFO
 extern const struct nla_policy drbd_resource_statistics_nl_policy[DRBD_A_RESOURCE_STATISTICS_RES_STAT_WRITE_ORDERING + 1];
 extern const struct nla_policy drbd_set_role_parms_nl_policy[DRBD_A_SET_ROLE_PARMS_FORCE + 1];
 extern const struct nla_policy drbd_start_ov_parms_nl_policy[DRBD_A_START_OV_PARMS_OV_STOP_SECTOR + 1];
-extern const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1];
+extern const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1];
 extern const struct nla_policy drbd_timeout_parms_nl_policy[DRBD_A_TIMEOUT_PARMS_TIMEOUT_TYPE + 1];
 
 struct drbd_cfg_reply {
@@ -352,6 +352,7 @@ struct invalidate_peer_parms {
 
 struct suspend_io_parms {
 	unsigned char bdev_freeze;
+	unsigned char flush_to_peers;
 };
 
 /* IS_SIGNED helpers for config_flags */
@@ -539,6 +540,7 @@ struct suspend_io_parms {
 #define F_res_new_name_IS_SIGNED 0
 #define F_p_reset_bitmap_IS_SIGNED 0
 #define F_bdev_freeze_IS_SIGNED 0
+#define F_flush_to_peers_IS_SIGNED 0
 
 int drbd_cfg_reply_from_attrs(struct drbd_cfg_reply *s, struct genl_info *info);
 int drbd_cfg_reply_ntb_from_attrs(struct nlattr ***ret_nested_attribute_table, struct genl_info *info);

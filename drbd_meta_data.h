@@ -4,11 +4,13 @@
 
 #ifdef __KERNEL__
 #define be_u64 __be64
+#define be_s64 __be64
 #define be_u32 __be32
 #define be_s32 __be32
 #define be_u16 __be16
 #else
 #define be_u64 struct { uint64_t be; }
+#define be_s64 struct { int64_t be; }
 #define be_u32 struct { uint32_t be; }
 #define be_s32 struct { int32_t be; }
 #define be_u16 struct { uint16_t be; }
@@ -32,6 +34,19 @@ struct peer_dev_md_on_disk_9 {
 	be_u32 flags;
 	be_s32 bitmap_index;
 	be_u32 reserved_u32[2];
+} __packed;
+
+/* Changed block tracking: one bitmap slot, not owned by a peer, records every
+ * write to the backing device since the bookmark "id". Valid only with
+ * DRBD_MDFF_CBT in the features.
+ */
+struct cbt_bookmark_on_disk_9 {
+	be_u64 id;		/* the slot records changes since this bookmark */
+	be_u64 bitmap_uuid;	/* current UUID at cbt-start */
+	be_u64 bitmap_dagtag;	/* the Primary's dagtag at cbt-start */
+	be_s64 since;		/* time of cbt-start, seconds since the epoch */
+	be_u32 flags;		/* CBT_BOOKMARK_* */
+	be_s32 bitmap_index;
 } __packed;
 
 struct meta_data_on_disk_9 {
@@ -63,6 +78,7 @@ struct meta_data_on_disk_9 {
 
 	struct peer_dev_md_on_disk_9 peers[DRBD_PEERS_MAX];
 	be_u64 history_uuids[HISTORY_UUIDS];
+	struct cbt_bookmark_on_disk_9 cbt_bookmark;
 
 	unsigned char padding_start[0];
 	unsigned char padding_end[0] __attribute__((aligned(4096)));

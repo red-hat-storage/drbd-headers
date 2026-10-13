@@ -286,8 +286,9 @@ const struct nla_policy drbd_start_ov_parms_nl_policy[DRBD_A_START_OV_PARMS_OV_S
 	[DRBD_A_START_OV_PARMS_OV_STOP_SECTOR] = { .type = NLA_U64, },
 };
 
-const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1] = {
+const struct nla_policy drbd_suspend_io_parms_nl_policy[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1] = {
 	[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE] = { .type = NLA_U8, },
+	[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS] = { .type = NLA_U8, },
 };
 
 const struct nla_policy drbd_timeout_parms_nl_policy[DRBD_A_TIMEOUT_PARMS_TIMEOUT_TYPE + 1] = {
@@ -2243,9 +2244,9 @@ static int __suspend_io_parms_from_attrs(struct suspend_io_parms *s,
 		struct nlattr ***ret_nested_attribute_table,
 		struct genl_info *info)
 {
-	const int maxtype = DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE;
+	const int maxtype = DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS;
 	struct nlattr *tla = info->attrs[DRBD_NLA_SUSPEND_IO_PARAMS];
-	struct nlattr *ntb[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE + 1];
+	struct nlattr *ntb[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS + 1];
 	struct nlattr *nla;
 	int err = 0;
 
@@ -2260,6 +2261,10 @@ static int __suspend_io_parms_from_attrs(struct suspend_io_parms *s,
 	nla = ntb[DRBD_A_SUSPEND_IO_PARMS_BDEV_FREEZE];
 	if (nla && s)
 		s->bdev_freeze = nla_get_u8(nla);
+
+	nla = ntb[DRBD_A_SUSPEND_IO_PARMS_FLUSH_TO_PEERS];
+	if (nla && s)
+		s->flush_to_peers = nla_get_u8(nla);
 
 	if (ret_nested_attribute_table && (!err || err == -ENOMSG))
 		memcpy(ret_nested_attribute_table, ntb, sizeof(ntb));
@@ -2431,4 +2436,5 @@ void set_invalidate_peer_parms_defaults(struct invalidate_peer_parms *x)
 void set_suspend_io_parms_defaults(struct suspend_io_parms *x)
 {
 	x->bdev_freeze = DRBD_SUSPEND_IO_BDEV_FREEZE_DEF;
+	x->flush_to_peers = DRBD_SUSPEND_IO_FLUSH_TO_PEERS_DEF;
 }

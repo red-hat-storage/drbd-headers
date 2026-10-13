@@ -326,6 +326,12 @@ enum drbd_state_rv {
 /* Meta data feature flags */
 #define DRBD_MDFF_DIVERGENCE_BITMAP (1ULL << 0)
 #define DRBD_MDFF_BITMAP_AUTHORITATIVE (1ULL << 1) /* MDF_PEER_BITMAP_AUTHORITATIVE is maintained */
+#define DRBD_MDFF_CBT (1ULL << 2) /* struct cbt_bookmark_on_disk_9 is maintained */
+
+/* Flags of the changed block tracking bookmark in the meta data */
+#define CBT_BOOKMARK_IN_USE	(1U << 0)
+#define CBT_BOOKMARK_INVALID	(1U << 1)
+#define CBT_BOOKMARK_FLUSHED	(1U << 2) /* the bitmap on disk holds every write up to now */
 
 enum mdf_flag {
 	MDF_CONSISTENT =	1 << 0,
