@@ -18,7 +18,7 @@
  * header will no longer load in a module that assumes a newer
  * version.
  */
-#define DRBD_TRANSPORT_API_VERSION 23
+#define DRBD_TRANSPORT_API_VERSION 24
 
 /*
  * MSG_MSG_DONTROUTE and MSG_PROBE are not used by DRBD. I.e.
@@ -54,6 +54,13 @@
 	tr_printk(KERN_NOTICE, transport, fmt, ## args)
 #define tr_info(transport, fmt, args...) \
 	tr_printk(KERN_INFO, transport, fmt, ## args)
+#define tr_dbg(transport, fmt, args...) ({				\
+	rcu_read_lock();						\
+	pr_debug("drbd %s %s:%s: " fmt, (transport)->log_prefix,	\
+		 (transport)->class->name,				\
+		 rcu_dereference((transport)->net_conf)->name, ## args); \
+	rcu_read_unlock();						\
+	})
 
 #define TR_ASSERT(x, exp)							\
 	do {									\
@@ -315,6 +322,11 @@ struct drbd_transport_class {
 	const int instance_size;
 	const int path_instance_size;
 	const int listener_instance_size;
+	/* Closing with unread received data resets the connection (TCP), and
+	 * recv() on DATA_STREAM takes any size. After sending a disconnect,
+	 * DRBD discards received data until the peer closes the connection.
+	 */
+	const bool drain_before_close;
 	struct drbd_transport_ops ops;
 
 	struct module *module;
